@@ -1,0 +1,64 @@
+#cloud-config
+hostname: __HOSTNAME__
+users:
+  - name: debian
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - __SSH_KEY__
+
+write_files:
+  - path: /etc/netplan/50-cloud-init.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          ens3:
+            dhcp4: no
+            addresses: [__IP__/24]
+            gateway4: 192.168.122.1
+            nameservers:
+              addresses: [1.1.1.1,8.8.8.8]
+
+  - path: /etc/hosts
+    content: |
+      127.0.0.1 localhost
+      192.168.122.10 jumpbox
+      192.168.122.11 server
+      192.168.122.21 node-0
+      192.168.122.22 node-1
+
+runcmd:
+  - netplan apply
+  - apt-get update
+  - apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y containerd.io
+
+  - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+  - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+  - apt-get update
+  - apt-get install -y kubelet kubeadm kubectl
+  - apt-mark hold kubelet kubeadm kubectl
+
+  - systemctl enable containerd && systemctl start containerd
+
+  - |
+    if [ "__HOSTNAME__" = "server" ]; then
+      kubeadm init --pod-network-cidr=10.244.0.0/16
+      mkdir -p /home/debian/.kube
+      cp -i /etc/kubernetes/admin.conf /home/debian/.kube/config
+      chown debian:debian /home/debian/.kube/config
+    fi
+
+  - |
+    if [ "__HOSTNAME__" = "jumpbox" ]; then
+      apt-get install -y kubectl
+    fi
+
+

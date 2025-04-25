@@ -1,0 +1,5 @@
+vms/
+seed/
+images/
+*.qcow2
+*.iso
