@@ -9,6 +9,12 @@ IP=$5
 
 mkdir -p vms seed/$NAME
 
+# Set the root password and inject SSH key
+LIBGUESTFS_BACKEND=direct virt-customize -a images/debian-12.qcow2 --smp 4 --memsize 8192 \
+	--timezone UTC \
+	--root-password password:test \
+	--ssh-inject "root:file:/home/aharivel/.ssh/id_rsa.pub"
+
 BASE_IMAGE=images/debian-12.qcow2
 DISK_IMG="vms/${NAME}.qcow2"
 cp "$BASE_IMAGE" "$DISK_IMG"

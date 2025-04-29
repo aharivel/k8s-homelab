@@ -14,7 +14,7 @@ write_files:
       network:
         version: 2
         ethernets:
-          ens3:
+          enp1s0:
             dhcp4: no
             addresses: [__IP__/24]
             gateway4: 192.168.122.1
