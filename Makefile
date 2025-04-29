@@ -6,7 +6,12 @@ VM_LIST = \
 
 create:
 	@mkdir -p images vms
-	wget -nc -O images/debian-12.qcow2 https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+	if [ ! -f "$QCOW2_IMAGE" ]; then
+		echo "Downloading Debian 12 image..."
+		wget -O "$QCOW2_IMAGE" https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+	else
+		echo "Image already exists: $QCOW2_IMAGE — skipping download."
+	fi
 	@for vm in $(VM_LIST); do \
 		set -- $$vm; \
 		./create-vm-libvirt.sh $$1 $$2 $$3 $$4 $$5; \
